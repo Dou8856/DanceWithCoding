@@ -1,6 +1,9 @@
 package com.example.expenseappllication;
 
+import com.example.expenseappllication.AddItemDialog.AddItemListener;
+
 import android.app.Activity;
+import android.app.DialogFragment;
 import android.app.FragmentManager;
 import android.os.Bundle;
 import android.text.Layout;
@@ -22,14 +25,23 @@ import android.widget.Toast;
 import java.io.LineNumberReader;
 
 
-public class MainActivity extends Activity {
+//Since we need to get the callback from dialog, we need to implement the listener
+public class MainActivity extends Activity implements AddItemListener{
+    TableLayout mTableLayout;
+
+    public void onDialogPositiveClick(DialogFragment dialog, String name, String cost,
+            String category) {
+        addExpense(name, cost, category);
+        //When the positive button is clicked, we add a new column to the table
+        Toast.makeText(getApplicationContext(), "positive button clicked", Toast.LENGTH_SHORT).show();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        TableLayout tbl = (TableLayout) findViewById(R.id.table_layout);
+        mTableLayout = (TableLayout) findViewById(R.id.table_layout);
         TableRow newRow = (TableRow) getLayoutInflater().inflate(R.layout.cell_layout, null);
 
         TextView cellName = (TextView) newRow.findViewById(R.id.name);
@@ -41,27 +53,39 @@ public class MainActivity extends Activity {
         TextView cellCategory = (TextView) newRow.findViewById(R.id.category);
         cellCategory.setText("breakfast");
 
-        tbl.addView(newRow);
+        mTableLayout.addView(newRow);
 
         Button addButton = (Button) findViewById(R.id.button_add);
         addButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
-                showAddItemOption("Breakfast", "51", "Breakfast");
+                showAddItemOption();
             }
         });
     }
 
-    public void showAddItemOption(String name, String expense, String category) {
+    public void showAddItemOption() {
         //Start a dialog
         AddItemDialog dialog = new AddItemDialog();
         FragmentManager fm = getFragmentManager();
         dialog.show(fm, "dialog");
-        addExpense();
     }
 
-    public void addExpense() {
+    public void addExpense(String name, String cost, String category) {
+        TableRow newRow = (TableRow) getLayoutInflater().inflate(R.layout.cell_layout, null);
 
+        TextView nameView = (TextView) newRow.findViewById(R.id.name);
+        nameView.setText(name);
+
+
+        TextView costView = (TextView) newRow.findViewById(R.id.cost);
+        costView.setText(cost);
+
+
+        TextView categoryView = (TextView) newRow.findViewById(R.id.category);
+        categoryView.setText(category);
+
+        mTableLayout.addView(newRow);
     }
 
     @Override
