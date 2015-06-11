@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:theme="@style/AddItemDialogTheme">
+
+    <TextView
+        android:layout_marginStart="5dp"
+        android:id="@+id/add_item_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/dialog_add_item_title"
+        android:textStyle="bold"
+        android:textSize="20dp"
+        />
+    <EditText
+        android:id="@+id/item_name"
+        android:layout_marginStart="5dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/dialog_edit_item_name"
+        />
+    <EditText
+        android:id="@+id/item_cost"
+        android:layout_marginStart="5dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/dialog_edit_item_cost"
+        />
+    <EditText
+        android:id="@+id/item_category"
+        android:layout_marginStart="5dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/dialog_edit_item_category"
+        />
+
+</LinearLayout>
