@@ -11,53 +11,62 @@ import android.graphics.PointF;
 import android.media.FaceDetector;
 import android.media.FaceDetector.Face;
 import android.os.Environment;
-import android.util.Log;
 import android.view.View;
 
+import java.util.List;
+
+/*
+*TODO: Delete this file
+* */
 /**
  * Created by 23060814 on 7/1/15.
  */
 public class FaceDetectionView extends View {
-    private static final int MAX_FACE = 10;
-    private static final String IMG = "pic.jpg";
-    private Bitmap mBackgroundImg;
+    private static final int MAX_FACE_NUM = 5;
+    private Bitmap mBackgroundBitmap;
     private Face[] mFaces;
     private int mFaceCount;
+    private List<String> mInformationList;
 
     //Preallocate on draw
-    private PointF tmp_point = new PointF();
-    private Paint tmp_paint = new Paint();
+    PointF midPoint = new PointF();
+    Paint drawPaint = new Paint();
+
     public FaceDetectionView(Context context) {
         super(context);
-
        getImage(Environment.getExternalStorageDirectory()+ "/DCIM/pic.jpg");
-        //getImage(Environment.getExternalStorageDirectory()+"/DCIM/100ANDRO/DSC_0002.JPG");
     }
 
-
-    public void getImage(String img) {
+    public void getImage(String filePath) {
         // Set internal configuration
         BitmapFactory.Options bitmap_options = new BitmapFactory.Options();
         bitmap_options.inPreferredConfig = Config.RGB_565;
-
-        mBackgroundImg = BitmapFactory.decodeFile(img, bitmap_options);
-        FaceDetector faceDetector = new FaceDetector(mBackgroundImg.getWidth(),
-                mBackgroundImg.getHeight(), MAX_FACE);
-        mFaces = new Face[MAX_FACE];
-
-        mFaceCount = faceDetector.findFaces(mBackgroundImg, mFaces);
-        Log.d("Emily", "Face count = " + mFaceCount);
+        mBackgroundBitmap = BitmapFactory.decodeFile(filePath, bitmap_options);
+        FaceDetector faceDetector = new FaceDetector(mBackgroundBitmap.getWidth(),
+                mBackgroundBitmap.getHeight(), MAX_FACE_NUM);
+        mFaces = new Face[MAX_FACE_NUM];
+        mFaceCount = faceDetector.findFaces(mBackgroundBitmap, mFaces);
     }
 
     public void onDraw(Canvas canvas) {
-        canvas.drawBitmap(mBackgroundImg,0, 500, tmp_paint);
+        float eyeDistance = 0.0f;
+        float confidence = 0.0f;
+        canvas.drawBitmap(mBackgroundBitmap,0, 0, null);
         for(int i = 0; i < mFaceCount; i++) {
             FaceDetector.Face face = mFaces[i];
-            tmp_paint.setColor(Color.RED);
-            tmp_paint.setAlpha(100);
-            face.getMidPoint(tmp_point);
-            canvas.drawCircle(tmp_point.x, tmp_point.y, face.eyesDistance(), tmp_paint);
-
+            drawPaint.setColor(Color.RED);
+            drawPaint.setAlpha(100);
+            face.getMidPoint(midPoint);
+            String info = new String("FaceDetector"+
+                    "Confidence: " + confidence +
+                    ", Eye distance: " + eyeDistance +
+                    ", Mid Point: (" + midPoint.x + ", " + midPoint.y + ")");
+            mInformationList.add(info);
+            //canvas.drawCircle(mPoint.x, mPoint.y, face.eyesDistance(),mPaint);
+            canvas.drawRect((int)midPoint.x - eyeDistance ,
+                    (int)midPoint.y - eyeDistance ,
+                    (int)midPoint.x + eyeDistance,
+                    (int)midPoint.y + eyeDistance, drawPaint);
         }
     }
 }

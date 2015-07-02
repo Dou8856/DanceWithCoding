@@ -26,6 +26,7 @@
             </intent-filter>
         </activity>
         <activity
+            android:screenOrientation="portrait"
             android:name=".DisplayFaceInfoActivity"
             android:label="@string/title_activity_display_face_info" >
         </activity>

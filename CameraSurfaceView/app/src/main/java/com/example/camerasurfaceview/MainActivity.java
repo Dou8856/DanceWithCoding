@@ -1,12 +1,7 @@
 package com.example.camerasurfaceview;
 
 import android.app.Activity;
-import android.app.ProgressDialog;
-import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.Bitmap.Config;
-import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
@@ -21,18 +16,13 @@ import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureRequest.Builder;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
-import android.media.FaceDetector;
-import android.media.FaceDetector.Face;
 import android.media.Image;
 import android.media.ImageReader;
 import android.media.ImageReader.OnImageAvailableListener;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.util.Log;
-import android.util.Size;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.Surface;
@@ -42,8 +32,6 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
@@ -68,28 +56,42 @@ public class MainActivity extends Activity{
     android.util.Size mPreviewSize;
     SurfaceHolder mSurfaceHolder;
     private Builder mPreviewBuilder;
-    private String mOpenedCamera;
     private ImageReader mImageReader;
     Handler mBackgroundHandler;
-    private TextView mFaceInfoTextView;
+    CameraCharacteristics mCameraCharacteristics;
+
+    private StateCallback mStateCallback = new StateCallback() {
+        @Override
+        public void onOpened(CameraDevice cameraDevice) {
+            mCameraDevice = cameraDevice;
+            startPreview();
+        }
+
+        @Override
+        public void onDisconnected(CameraDevice cameraDevice) {
+
+        }
+
+        @Override
+        public void onError(CameraDevice cameraDevice, int i) {
+
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        LinearLayout layout = (LinearLayout) findViewById(R.id.preview_layout);
+        //Button for capturing image
         Button captureButton = (Button) findViewById(R.id.button_capture);
-        mFaceInfoTextView = (TextView) findViewById(R.id.face_info_view);
-        mFaceInfoTextView.setText("Hello");
         captureButton.setOnClickListener(new View.OnClickListener(){
-            public void onClick(View v) {
+            public void onClick(View view) {
                 //take picture
                 takePicture();
-
-
             }
         });
 
+        //Button for start DisplayFaceInfoActivity
         Button faceInfoButton = (Button) findViewById(R.id.button_face_info);
         faceInfoButton.setOnClickListener(new OnClickListener() {
             @Override
@@ -100,16 +102,14 @@ public class MainActivity extends Activity{
                 startActivity(displayFaceInfoIntent);
             }
         });
+
+        //Create SurfaceView to hold the camera preview
         mSurfaceView = (SurfaceView)findViewById(R.id.surface_preview);
-        //mSurfaceView = new SurfaceView(getApplicationContext());
         mSurfaceHolder = mSurfaceView.getHolder();
-        if(mSurfaceHolder == null) {
-            Log.d("Emily", "mSurfaceHolder is null");
-        }
         mSurfaceHolder.addCallback(new Callback() {
             @Override
             public void surfaceCreated(SurfaceHolder surfaceHolder) {
-                Log.d("Emily", "onSurfaceCreated");
+                //Once the surface is created, open the camera
                 openCamera();
             }
 
@@ -125,76 +125,37 @@ public class MainActivity extends Activity{
         });
     }
 
-//    public class RetrieveFaceInfoTask extends AsyncTask<String, String, String> {
-//        int mFaceCount;
-//        ProgressDialog mProgressDialog;
-//        Context mContext;
-//        List<String> mFacesInfo;
-//
-//        @Override
-//        protected String doInBackground(String... strings) {
-//            Log.d("Emily", "Do in background...");
-//            BitmapFactory.Options bitmap_options = new BitmapFactory.Options();
-//            bitmap_options.inPreferredConfig = Config.RGB_565;
-//            Bitmap photoToDetect = BitmapFactory.decodeFile(
-//                    Environment.getExternalStorageDirectory() + "/DCIM/pic.jpg", bitmap_options);
-//
-//            FaceDetector faceDetector = new FaceDetector(photoToDetect.getWidth(),
-//                    photoToDetect.getHeight(), 10); // 10 is the maximum number of faces
-//            Face[] faces = new Face[10];
-//
-//            for(int i = 0; i < mFaceCount; i++){
-//                Face f = faces[i];
-//                String faceInfo = "confidence = " + f.confidence() + " Eye Distance = " + f
-//                        .eyesDistance();
-//                Log.d("Emily", "info = " + faceInfo);
-//                mFacesInfo.add(faceInfo);
-//
-//            }
-//            mFaceCount = faceDetector.findFaces(photoToDetect, faces);
-//
-//            return null;
-//        }
-//        /**
-//         * After completing background task Dismiss the progress dialog
-//         * **/
-//        protected void onPostExecute(String file_url)  {
-//
-//            Log.d("Emily", "onPostExecute");
-//            mFaceInfoTextView.setText("Face count = " + mFaceCount);
-//           // Log.d("Emily", "FaceInfo = " + mFacesInfo.get(0));
-//        }
-//    }
-
+    //takePicture function is called when capture button is clicked
     protected void takePicture() {
         if(mCameraDevice == null) {
             return;
         }
-        CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         try {
-            CameraCharacteristics characteristics = manager.getCameraCharacteristics(mCameraDevice
-                    .getId());
             mJpegSizes = null;
-            if(characteristics != null) {
+            if(mCameraCharacteristics != null) {
                 //Get all the available sizes for jpeg format
-                mJpegSizes = characteristics.get(CameraCharacteristics
+                mJpegSizes = mCameraCharacteristics.get(CameraCharacteristics
                         .SCALER_STREAM_CONFIGURATION_MAP).getOutputSizes(ImageFormat.JPEG);
             }
             if(mJpegSizes != null || mJpegSizes.length >0) {
                 //set the size for captured jpeg
                 mJpegSize = mJpegSizes[0];
             }
-            //Ste the width, height, format and maxi num image for this image reader
+
+            //Set the width, height, format and max number of images for this image reader
+            //Here we only allow 1 image each time
             mImageReader = ImageReader.newInstance(mJpegSize.getWidth(), mJpegSize.getHeight(),
                     ImageFormat.JPEG, 1);
-            //Two output surfaces, one for preview and one for image
+
             List<Surface> outputSurface = new ArrayList<Surface>(2);
             outputSurface.add(mImageReader.getSurface());
             outputSurface.add(mSurfaceHolder.getSurface());
 
-            //Capture request for still image capture
+            //Create a CaptureRequest
             final Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice
                     .TEMPLATE_STILL_CAPTURE);
+
+            //CaptureRequest setup
             captureBuilder.addTarget(mImageReader.getSurface());
             captureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
 
@@ -202,6 +163,7 @@ public class MainActivity extends Activity{
             final File file = new File(Environment.getExternalStorageDirectory()+"/DCIM",
                     "pic.jpg");
 
+            // Create listener when image is available
             ImageReader.OnImageAvailableListener readerListener = new OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader imageReader) {
@@ -237,6 +199,7 @@ public class MainActivity extends Activity{
 
             final Handler backgroundHandler = new Handler(thread.getLooper());
             mImageReader.setOnImageAvailableListener(readerListener, backgroundHandler);
+            //Create CaptureCallback listener whe the capture is completed
             final CaptureCallback captureListener = new CameraCaptureSession.CaptureCallback() {
                 @Override
                 public void onCaptureCompleted(CameraCaptureSession session,
@@ -244,9 +207,7 @@ public class MainActivity extends Activity{
                     super.onCaptureCompleted(session, request, result);
                     Toast.makeText(MainActivity.this, "Saved" + file, Toast.LENGTH_SHORT).show();
                     //After taking picture, we start preview again
-                    // startPreview();
-                    //ToDo: Start another activity and display the captured image and the
-                    // information
+                    startPreview();
 
                 }
             };
@@ -274,6 +235,93 @@ public class MainActivity extends Activity{
 
     }
 
+
+    private void openCamera() {
+        mCameraManager = (CameraManager) getSystemService(CAMERA_SERVICE);
+        try {
+            //Get list of available cameras
+            String[] camIds = mCameraManager.getCameraIdList();
+            //Open the camera 0, in this case is the main camera
+            String openCamId = camIds[0];
+            //Get the CameraCharacteristics, and find the best suit your need.
+            //Here we just simply choose the size for preview
+            mCameraCharacteristics = mCameraManager.getCameraCharacteristics(openCamId);
+            if(mCameraCharacteristics != null) {
+                StreamConfigurationMap configMap = mCameraCharacteristics.get(CameraCharacteristics
+                        .SCALER_STREAM_CONFIGURATION_MAP);
+
+                //Get previewSize
+                mPreviewSizes = configMap.getOutputSizes(SurfaceTexture.class);
+                mPreviewSize = mPreviewSizes[0];
+            }
+
+            if(mSurfaceHolder == null) {
+                return;
+            }
+
+            //Set the size for mSurfaceHolder
+            mSurfaceHolder.setFixedSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
+            mCameraManager.openCamera(openCamId, mStateCallback, null);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void startPreview() {
+        if(null == mCameraDevice || mPreviewSize == null) {
+            return;
+        }
+        //Get Surface
+        Surface surface = mSurfaceHolder.getSurface();
+
+        try {
+            //Create a CaptureRequest
+            mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+        //Add the surface as target
+        mPreviewBuilder.addTarget(surface);
+
+        try {
+            //Create a capture session and update preview
+            mCameraDevice.createCaptureSession(Arrays.asList(surface), new CameraCaptureSession.StateCallback() {
+
+                @Override
+                public void onConfigured(CameraCaptureSession cameraCaptureSession) {
+                    mCameraCaptureSession = cameraCaptureSession;
+                    updatePreview();
+                }
+
+                @Override
+                public void onConfigureFailed(CameraCaptureSession cameraCaptureSession) {
+
+                }
+            }, null);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void updatePreview() {
+        if(mCameraDevice == null) {
+            return;
+        }
+        mPreviewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+        HandlerThread thread = new HandlerThread("CameraPreview");
+        thread.start();
+        Handler backgroundHandler = new Handler(thread.getLooper());
+        mBackgroundHandler = backgroundHandler;
+        try {
+            //Update preview by set a repeating request to mCameraCaptureSession
+            mCameraCaptureSession.setRepeatingRequest(mPreviewBuilder.build(), null,
+                    backgroundHandler);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -296,96 +344,8 @@ public class MainActivity extends Activity{
         return super.onOptionsItemSelected(item);
     }
 
-    private void openCamera() {
-        mCameraManager = (CameraManager) getSystemService(CAMERA_SERVICE);
-        try {
-            String[] camIds = mCameraManager.getCameraIdList();
-            //Open the camera 0, in this case is the main camera
-            String openCamId = camIds[0];
-            mOpenedCamera = openCamId;
-            CameraCharacteristics chara = mCameraManager.getCameraCharacteristics(openCamId);
-            Size[] jpegSizes = null;
-            if(chara != null) {
-                StreamConfigurationMap configMap = chara.get(CameraCharacteristics
-                        .SCALER_STREAM_CONFIGURATION_MAP);
-
-                //Get previewSize
-                mPreviewSizes = configMap.getOutputSizes(SurfaceTexture.class);
-                mPreviewSize = mPreviewSizes[0];
-            }
-
-            if(mSurfaceHolder == null) {
-                Log.d("Emily", "mSurfaceHolder == null");
-                return;
-            }
-            Log.d("Emily", "mSurfaceHolder != null");
-            mSurfaceHolder.setFixedSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
-            mCameraManager.openCamera(openCamId, mStateCallback, null);
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        }
-    }
-
-    //Here we should
-    private void startPreview() {
-        Log.d("Emily", "Start Preview");
-        //TODO: CaptureRequest
-        if(null == mCameraDevice || mPreviewSize == null) {
-            Log.d("Emily", "CameraDevice is null");
-            return;
-        }
-        //We get Surface from the SurfaceView
-        Surface surface = mSurfaceHolder.getSurface();
-
-        try {
-            mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        }
-        mPreviewBuilder.addTarget(surface);
-
-        try {
-            mCameraDevice.createCaptureSession(Arrays.asList(surface), new CameraCaptureSession.StateCallback() {
-
-                @Override
-                public void onConfigured(CameraCaptureSession cameraCaptureSession) {
-                    mCameraCaptureSession = cameraCaptureSession;
-                    updatePreview();
-                }
-
-                @Override
-                public void onConfigureFailed(CameraCaptureSession cameraCaptureSession) {
-
-                }
-            }, null);
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        }
-
-    }
-
-    private void updatePreview() {
-        Log.d("Emily", "update preview");
-        if(mCameraDevice == null) {
-            Log.d("Emily", "CameraDevice is null");
-            return;
-        }
-        mPreviewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-        HandlerThread thread = new HandlerThread("CameraPreview");
-        thread.start();
-        Handler backgroundHandler = new Handler(thread.getLooper());
-        mBackgroundHandler = backgroundHandler;
-        try {
-            mCameraCaptureSession.setRepeatingRequest(mPreviewBuilder.build(), null,
-                    backgroundHandler);
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        }
-    }
-
     @Override
     public void onResume(){
-        Log.d("Emily", "onResume");
         super.onResume();
         startPreview();
     }
@@ -398,23 +358,4 @@ public class MainActivity extends Activity{
             mCameraDevice = null;
         }
     }
-
-    private StateCallback mStateCallback = new StateCallback() {
-        @Override
-        public void onOpened(CameraDevice cameraDevice) {
-            Log.d("Emily", "Camera is opened");
-            mCameraDevice = cameraDevice;
-            startPreview();
-        }
-
-        @Override
-        public void onDisconnected(CameraDevice cameraDevice) {
-
-        }
-
-        @Override
-        public void onError(CameraDevice cameraDevice, int i) {
-
-        }
-    };
 }
