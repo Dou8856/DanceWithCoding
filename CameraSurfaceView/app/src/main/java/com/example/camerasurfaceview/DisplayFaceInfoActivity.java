@@ -2,7 +2,9 @@ package com.example.camerasurfaceview;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
+import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
+import android.graphics.BitmapFactory.Options;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.media.FaceDetector;
@@ -16,6 +18,7 @@ import android.view.MenuItem;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -23,7 +26,7 @@ public class DisplayFaceInfoActivity extends Activity {
     Bitmap mBackgroundImg;
     ImageView mBackgroundView;
     TextView mInformationView;
-    List<String> mInformationList;
+    ArrayList<String> mInformationList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,12 +34,16 @@ public class DisplayFaceInfoActivity extends Activity {
 
         setContentView(R.layout.activity_display_face_info);
         mInformationView = (TextView) findViewById(R.id.face_info_text);
-        mBackgroundImg = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory() + "/DCIM/pic.jpg");
+        // Set Bitmap internal configuration to RGB_565
+        Options bitmapOptions = new BitmapFactory.Options();
+        bitmapOptions.inPreferredConfig = Config.RGB_565;
+        mBackgroundImg = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory() +
+                "/DCIM/pic.jpg", bitmapOptions);
         mBackgroundView = (ImageView) findViewById(R.id.background_image);
         mBackgroundView.setImageBitmap(mBackgroundImg);
         //Start a task to detect faces
         new RetrieveFaceInfoTask().execute();
-        mInformationList = null;
+        mInformationList = new ArrayList<String>();
 
     }
 
@@ -57,14 +64,15 @@ public class DisplayFaceInfoActivity extends Activity {
             Face[] faces = new Face[MAX_FACE_NUM];
             mFaceCount = faceDetector.findFaces(mBackgroundImg, faces);
             if (mFaceCount > 0) {
-                for (int index = 0; index < mFaceCount; index++) {
-                    faces[index].getMidPoint(midPoint);
-                    eyeDistance = faces[index].eyesDistance();
-                    confidence = faces[index].confidence();
+                for (int i = 0; i < mFaceCount; i++) {
+                    faces[i].getMidPoint(midPoint);
+                    //Get eyeDistance on face[i]
+                    eyeDistance = faces[i].eyesDistance();
+                    confidence = faces[i].confidence();
                     String info = new String("FaceDetector" +
                             "Confidence: " + confidence +
                             ", Eye distance: " + eyeDistance +
-                            ", Mid Point: (" + midPoint.x + ", " + midPoint.y + ")");
+                            ", Mid Point: (" + midPoint.x + ", " + midPoint.y + ")\n");
                     mInformationList.add(info);
                 }
             }
@@ -79,7 +87,7 @@ public class DisplayFaceInfoActivity extends Activity {
         protected void onPostExecute(String file_url) {
             StringBuilder sb = new StringBuilder();
             //Do UI update
-            if (mInformationList == null) {
+            if (mInformationList.size() == 0) {
                 mInformationView.setText("Detected face number is " + mFaceCount);
             } else {
                 for (int i = 0; i < mInformationList.size(); i++) {

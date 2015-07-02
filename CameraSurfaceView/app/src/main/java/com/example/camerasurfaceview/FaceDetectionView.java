@@ -13,6 +13,7 @@ import android.media.FaceDetector.Face;
 import android.os.Environment;
 import android.view.View;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /*
@@ -26,7 +27,7 @@ public class FaceDetectionView extends View {
     private Bitmap mBackgroundBitmap;
     private Face[] mFaces;
     private int mFaceCount;
-    private List<String> mInformationList;
+    private ArrayList<String> mInformationList;
 
     //Preallocate on draw
     PointF midPoint = new PointF();
@@ -39,9 +40,9 @@ public class FaceDetectionView extends View {
 
     public void getImage(String filePath) {
         // Set internal configuration
-        BitmapFactory.Options bitmap_options = new BitmapFactory.Options();
-        bitmap_options.inPreferredConfig = Config.RGB_565;
-        mBackgroundBitmap = BitmapFactory.decodeFile(filePath, bitmap_options);
+        BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
+        bitmapOptions.inPreferredConfig = Config.RGB_565;
+        mBackgroundBitmap = BitmapFactory.decodeFile(filePath, bitmapOptions);
         FaceDetector faceDetector = new FaceDetector(mBackgroundBitmap.getWidth(),
                 mBackgroundBitmap.getHeight(), MAX_FACE_NUM);
         mFaces = new Face[MAX_FACE_NUM];
