@@ -1,0 +1,4 @@
+Name    Cost    Category
+ICA     100     Grocery
+Brunch  200     Social
+ICA     200     Grocery

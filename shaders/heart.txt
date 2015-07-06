@@ -1,0 +1,47 @@
+//MrOMGWTF
+//I have no idea what is it
+//Looks cool tho
+
+precision highp float;
+
+uniform float time;
+uniform vec2 mouse;
+uniform vec2 resolution;
+
+float heart(float angle){
+	float p1 = sin(angle)*sqrt((abs(cos(angle))))/(sin(angle)+1.4);
+	float p2 = 2.0-sin(angle)*2.0;
+	return p1+p2;
+}
+
+float wave(float time){
+	return abs(sin(time))
+}
+
+)
+void main()
+{
+    vec2 myMouse = mouse ;
+    vec2 myFragCoord = gl_FragCoord.xy;
+
+    float r;
+    float angle;
+    vec4 color = vec4(0.0,0.0,0.0,1.0);
+
+    myMouse.x *= resolution.x/resolution.y;
+    myFragCoord.x = gl_FragCoord.x/resolution.y;
+    myFragCoord.y = gl_FragCoord.y/resolution.y;
+
+    float dist = distance(myMouse,myFragCoord);
+
+    angle = atan(myFragCoord.y-myMouse.y,myFragCoord.x-myMouse.x);
+
+
+    r = heart(angle)/10.0;
+
+    if(dist<=r) {
+        color = vec4(1.0, 0.0, 0.0, 1.0) ;
+    }
+    gl_FragColor = color;
+}
+

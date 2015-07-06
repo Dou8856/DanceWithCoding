@@ -1,0 +1,128 @@
+//MrOMGWTF
+//I have no idea what is it
+//Looks cool tho
+
+precision highp float;
+
+uniform float time;
+uniform vec2 mouse;
+uniform vec2 resolution;
+
+struct Light{
+	vec3 sIntensity;
+	float sPower;
+	vec3 dIntensity;
+	float dPower;
+	vec3 aIntensity;
+	float aConstant;
+	vec3 position;
+	float material;
+};
+
+
+Light initLight(){
+	Light light;
+	light.position = vec3(0.9,0.9,1.0);
+	light.dIntensity = vec3(1.0,1.0,1.0);
+	light.sIntensity = vec3(1.0,1.0,1.0);
+	light.aIntensity = vec3(1.0,1.0,1.0);
+	light.sPower = 0.3;
+	light.dPower = 0.4;
+	light.aConstant = 0.2;
+	light.material = 15.0;
+	return light;
+}
+
+	
+
+float calculate_r(float angle){
+	float r;
+	r = pow(sin(angle), 2.0)+pow(cos(angle), 2.0);
+	return r;
+}
+
+vec3 calculate_normal(float x, float y, float r, vec3 center){
+	x -= center.x;
+	y -= center.y;
+	float z = sqrt(r*r - x*x - y*y);
+	vec3 normal_vector = vec3(x, y, z);
+	return normal_vector;
+}
+
+vec3 calculate_halfway(vec3 view, vec3 light){
+	return normalize(light+view);
+}
+
+vec4 calculate_illumination(Light light, vec3 viewDir, vec3 lightDir, vec3 halfway, vec3 normal){
+	vec4 i;
+	vec3 ai = light.aIntensity*light.aConstant;
+	vec3 di = dot(normal, lightDir)*light.dPower*light.dIntensity;
+	float temp = dot(halfway,viewDir);
+	vec3 si = pow(temp, light.material)*light.sPower*light.sIntensity;
+	return vec4(ai+di+si,1.0);
+}
+
+
+Light updateLightPosition(Light light){
+	light.position += vec3(sin(time), cos(time), 0.0*sin(time));
+	return light;
+}
+
+float calculate_pixelsize(){
+	return 1.0/resolution.x;
+}
+
+void main()
+{
+    vec2 myMouse = mouse ;
+    vec2 myFragCoord = gl_FragCoord.xy;
+    vec3 normal;
+    Light light;
+    float r;
+    float angle;
+    vec3 halfway;
+    vec3 norm_lightDir;
+    vec3 norm_viewDir;
+	vec4 render_color;
+	
+    vec3 view = vec3(0.5,0.5,0.5);
+    vec4 color = vec4(0.0,0.0,0.0,1.0);
+    light = initLight();
+    light = updateLightPosition(light);
+	
+    myMouse.x *= resolution.x/resolution.y;
+    myFragCoord.x = gl_FragCoord.x/resolution.y;
+    myFragCoord.y = gl_FragCoord.y/resolution.y;
+    vec3 center = vec3(1.0, 0.5, 0.0);
+	
+    angle = atan(myFragCoord.y-myMouse.y,myFragCoord.x-myMouse.x);
+    r = calculate_r(angle)/5.0;	
+    float dist = distance(vec2(center.x,center.y),myFragCoord);
+float pixelsize = calculate_pixelsize();
+
+	float diff = abs(dist-r);
+		
+	
+    if(dist<=r) {
+	normal = calculate_normal(myFragCoord.x, myFragCoord.y, r, center);
+	normal = normalize(normal);
+	norm_lightDir = normalize(light.position - normal);
+ 	norm_viewDir = normalize(view);
+	halfway = calculate_halfway(norm_lightDir, norm_viewDir);
+	color = calculate_illumination(light, norm_viewDir, norm_lightDir, halfway, normal);	    
+	
+	color *= clamp( abs(diff)/(pixelsize*2.0),0.0,1.5);
+	    //if( dist<2.0*pixelsize) color= vec4(1.0,0.0,0.0,0.0);
+	    //color = vec4(diff, diff, diff, 1.0);
+	    
+    }
+	
+	//else color = vec4(pixelsize/diff, pixelsize/diff, pixelsize/diff, 1.0);
+	//else color = vec4(diff/pixelsize, diff/pixelsize, diff/pixelsize, 1.0);
+	else color = vec4(diff, diff, diff, 1.0);
+	
+	
+
+    gl_FragColor = color;
+}
+

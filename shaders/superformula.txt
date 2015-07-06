@@ -1,0 +1,48 @@
+//MrOMGWTF
+//I have no idea what is it
+//Looks cool tho
+
+precision highp float;
+
+uniform float time;
+uniform vec2 mouse;
+uniform vec2 resolution;
+
+float cal_r(float angle){
+    float r;
+    float m = 8.0; 
+    float n1 = 1.0;
+    float n2 = 1.0;
+    float n3 = 1.0;
+    float temp = pow((abs(cos((m*angle/4.0)))),n2) + pow(abs(sin(m*angle/4.0)), n3) ;
+    r = pow(temp, -(1.0/n1))*0.4;
+    return r;   
+}
+
+
+void main()
+{
+    vec2 myMouse = mouse ;
+    vec2 myFragCoord = gl_FragCoord.xy;
+
+    float r;
+    float angle;
+    vec4 color = vec4(0.0,0.0,0.0,1.0);
+
+    myMouse.x *= resolution.x/resolution.y;
+    myFragCoord.x = gl_FragCoord.x/resolution.y;
+    myFragCoord.y = gl_FragCoord.y/resolution.y;
+
+    float dist = distance(myMouse,myFragCoord);
+
+    angle = atan(myFragCoord.y-myMouse.y,myFragCoord.x-myMouse.x)+time/2.0;
+
+
+    r = cal_r(angle);
+
+    if(dist<=r) {
+        color = vec4(0.1, 0.5, 0.0, 1.0) ;
+    }
+    gl_FragColor = color;
+}
+

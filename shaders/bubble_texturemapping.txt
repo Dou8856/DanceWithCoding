@@ -1,0 +1,199 @@
+/*
+void main(void)
+{
+	vec2 uv = gl_FragCoord.xy / iResolution.xy;
+	
+	//uv.y += iGlobalTime/5.0;
+	
+	uv += texture2D(iChannel0, uv).rg; 
+	
+	gl_FragColor = texture2D(iChannel1, uv); 
+}
+*/
+
+//MrOMGWTF
+//I have no idea what is it
+//Looks cool tho
+
+precision highp float;
+
+uniform float time;
+uniform vec2 mouse;
+uniform vec2 resolution;
+
+struct Light{
+	vec3 sIntensity;
+	float sPower;
+	vec3 dIntensity;
+	float dPower;
+	vec3 aIntensity;
+	float aConstant;
+	vec3 position;
+	float material;
+};
+
+
+Light initLight(){
+	Light light;
+	light.position = vec3(0.9,0.9,1.0);
+	light.dIntensity = vec3(0.5,0.5,0.5);
+	light.sIntensity = vec3(0.5,0.5,0.5);
+	light.aIntensity = vec3(0.5,0.5,0.5);
+	light.sPower = 0.3;
+	light.dPower = 0.4;
+	light.aConstant = 0.2;
+	light.material = 15.0;
+	return light;
+}
+
+	
+
+float calculate_r(float angle){
+	float r;
+	r = pow(sin(angle), 2.0)+pow(cos(angle), 2.0);
+	return r;
+}
+
+vec3 calculate_normal(float x, float y, float r, vec3 center){
+	x -= center.x;
+	y -= center.y;
+	float z = sqrt(r*r - x*x - y*y);
+	vec3 normal_vector = vec3(x, y, z);
+	return normal_vector;
+}
+
+vec3 calculate_halfway(vec3 view, vec3 light){
+	return normalize(light+view);
+}
+
+vec4 calculate_illumination(Light light, vec3 viewDir, vec3 lightDir, vec3 halfway, vec3 normal){
+	vec4 i;
+	vec3 ai = light.aIntensity*light.aConstant;
+	vec3 di = dot(normal, lightDir)*light.dPower*light.dIntensity;
+	float temp = dot(halfway,viewDir);
+	vec3 si = pow(temp, light.material)*light.sPower*light.sIntensity;
+	return vec4(ai+di+si,1.0);
+}
+
+
+Light updateLightPosition(Light light){
+	light.position += vec3(sin(time), cos(time), 0.0*sin(time));
+	return light;
+}
+
+float calculate_pixelsize(){
+	return 1.0/iResolution.x;
+}
+
+vec2 check(vec2 pixel){
+    vec2 check;
+
+    check.x = floor(pixel.x/0.1);
+    check.y = floor(pixel.y/0.1);
+    return check;
+}
+
+vec4 calculate_lighting_color(vec2 myFragCoord, float r, vec3 center, Light light, vec3 view, float dist){
+    vec4 color;
+    if(dist<=r){
+		vec3 normal = calculate_normal(myFragCoord.x, myFragCoord.y, r, center);
+		normal = normalize(normal);
+		vec3 norm_lightDir = normalize(light.position - normal);
+		vec3 norm_viewDir = normalize(view);
+		vec3 halfway = calculate_halfway(norm_lightDir, norm_viewDir);
+		color = calculate_illumination(light, norm_viewDir, norm_lightDir, halfway, normal)*0.0;	  
+		color += texture2DProj(iChannel1, vec3(normal.x+1.0, normal.y+1.0, normal.z+1.7)); 
+		}
+    return color;
+}
+
+vec4 set_background(vec2 myFragCoord){
+			
+    vec4 check_color;
+    vec2 check = check(myFragCoord);
+    float remainder = mod(check.x+check.y, 2.0);
+    if(remainder==0.0) check_color = vec4(1.0,1.0, 1.0,1.0)*0.7;
+    else check_color = vec4(myFragCoord.y, myFragCoord.x*0.6, 0.0,1.0)*0.6;
+	return check_color;
+}
+
+vec4 smooth_edge(vec4 color, float pixelsize, float dist, vec4 background, float r, vec2 myFragCoord){
+	 float diff = abs(dist-r);
+	if(dist<=r){
+		color+= background*0.1;// add transparancy
+		if( diff<2.0*pixelsize) {
+			color= background*(1.0 - abs(diff)/(pixelsize*2.0))+color*clamp( abs(diff)/(pixelsize*2.0),0.0,1.0);    //smooth the edge
+		}
+		color-=background; //We will add the background color back in the end, so we do this in advance
+	}
+	return color;
+}
+
+
+vec3 update_position(float shift){
+	return vec3(abs(sin(iGlobalTime/5.0+shift)), abs(cos(iGlobalTime/5.0+shift/10.0)),0.0);
+}
+
+void main()
+{
+	vec2 myMouse = vec2(iMouse.x, iMouse.y) ;
+	vec2 myFragCoord = gl_FragCoord.xy;
+	Light light;
+	vec4 background;
+
+	// initialize
+	vec3 view = vec3(0.5,0.5,0.5);
+	vec4 color = vec4(0.0,0.0,0.0,1.0);
+	vec4 color2 = color;
+	vec4 color3 = color;
+	vec4 color4 = color;
+	float pixelsize = calculate_pixelsize();
+	float center_x = iResolution.x/(iResolution.y*2.0);
+
+	light = initLight();
+	//light = updateLightPosition(light);
+
+	myMouse.x *= iResolution.x/iResolution.y;
+	myFragCoord.x = gl_FragCoord.x/iResolution.y;
+	myFragCoord.y = gl_FragCoord.y/iResolution.y;
+//	background = set_background(myFragCoord);
+	background = texture2D(iChannel1, vec2(myFragCoord.x/1.8, 1.0-myFragCoord.y), 1.0) ;
+//	background = vec4(0.0,0.0,0.0,1.0);
+
+	vec3 center = vec3(center_x, 0.8, 0.0);
+	vec3 center2 = vec3(center_x, 0.5, 0.0);
+	vec3 center3 = vec3(center_x, 0.3,0.0);
+	vec3 center4 = vec3(center_x,0.15, 0.0);
+	
+/*	center = update_position(0.0);
+	center2 = update_position(5.0);
+	center3 = update_position(10.0);
+	center4 = update_position(15.0);
+*/
+	float angle = atan(myFragCoord.y-center.y,myFragCoord.x-center.x);
+	float r = calculate_r(angle)/6.0;	
+	float dist = distance(vec2(center.x,center.y),myFragCoord);
+	color = calculate_lighting_color(myFragCoord, r,center, light, view, dist);	
+	color = smooth_edge(color, pixelsize, dist, background, r, myFragCoord);
+
+	float angle2 = atan(myFragCoord.y-center2.y,myFragCoord.x-center2.x);
+	float r2 = calculate_r(angle2)/10.0;	
+	float dist2 = distance(vec2(center2.x,center2.y),myFragCoord);
+	color2 = calculate_lighting_color(myFragCoord, r2,center2, light, view, dist2);	
+	color2 = smooth_edge(color2, pixelsize, dist2, background, r2, myFragCoord);
+	
+	float angle3 = atan(myFragCoord.y-center3.y,myFragCoord.x-center3.x);
+	float r3 = calculate_r(angle3)/12.0;	
+	float dist3 = distance(vec2(center3.x,center3.y),myFragCoord);
+	color3 = calculate_lighting_color(myFragCoord, r3,center3, light, view, dist3);	
+	color3 = smooth_edge(color3, pixelsize, dist3, background, r3, myFragCoord);
+
+	float angle4 = atan(myFragCoord.y-center4.y,myFragCoord.x-center4.x);
+	float r4 = calculate_r(angle4)/18.0;	
+	float dist4 = distance(vec2(center4.x,center4.y),myFragCoord);
+	color4 = calculate_lighting_color(myFragCoord, r4,center4, light, view, dist4);	
+	color4 = smooth_edge(color4, pixelsize, dist4, background, r4, myFragCoord);
+	
+	gl_FragColor = color4+color3+color+color2+background;
+}
+
