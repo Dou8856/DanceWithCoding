@@ -1,17 +1,17 @@
-Name Cost Category
-2015-07
+Name Cost Gategory
+====================
+Month 2015-07
+Week 28
+ICA 155 Grocery
+Mormors 30 Breakfast
+Lunch 30 Social
+Latte 22 Social
+Lunch 35 Social
+Smoothie 35 Fika
+Mormors 30 Breakfast
+--------EndOfWeek-------
 Rent 3900 rent
-Elecrity 500 houshold
-internet 400 household
-W28
-Fika 40 Social
-Brunch 200 Social
-ICA 100 grocery
------------
-W29
-Breakfast 30 breakfast
-Lunch 40 Food
-Smoothie 40 Food
--------------
+Flight 226 Traveling
+========EndOfMonth================
 
 
