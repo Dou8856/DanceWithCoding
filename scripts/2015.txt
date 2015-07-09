@@ -9,6 +9,9 @@ Latte 22 Social
 Lunch 35 Social
 Smoothie 35 Fika
 Mormors 30 Breakfast
+Latte 40 Fika
+ICA 190 Grocery
+Breakfast 29 Breakfast
 --------EndOfWeek-------
 Rent 3900 rent
 Flight 226 Traveling

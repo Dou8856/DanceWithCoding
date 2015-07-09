@@ -1,5 +1,5 @@
 fname = "2015.txt"
-
+#TODO: Optimization
 def weekly_expense(week=None):
     if week is None:
         week = raw_input("Enter the week number ")
@@ -19,13 +19,7 @@ def weekly_expense(week=None):
         if line.lower().startswith("week") and line.split()[len(line.split()) - 1] == week:
             for line in fhandle:
                 if not line.startswith("----"):
-                    l = line.split()
-                    category = l[2].lower()
-                    cost = float(l[1])
-                    if category not in expense.keys():
-                        expense[category] = cost
-                    else:
-                        expense[category] = expense[category] + cost
+                    expense[line.split()[2].lower()] = expense.get(line.split()[2].lower(), 0) + float(line.split()[1])
                 else:
                     print "Week%s"%week
                     print_list(expense)
@@ -35,7 +29,7 @@ def weekly_expense(week=None):
 
 def print_list(expense_list):
     total = 0
-    for key in expense_list.keys():
+    for key in expense_list:
         total = total + expense_list[key]
         print "{0:10} {1:2}".format(key, expense_list[key])
     border="-"*20
@@ -63,11 +57,8 @@ def monthly_expense(month=None):
                         for line in fhandle:
                             #After end of week, we check the start condition and end condition
                             if "week" not in line.lower() and not line.startswith("==="):
-                                split_list = line.split()
-                                if split_list[2] not in expense.keys():
-                                    expense[split_list[2]] = float(split_list[1])
-                                else:
-                                    expense[split_list[2]] = expense[split_list[2]] + float(split_list[1])
+                                #split_list = line.split()
+                                expense[line.split()[2]] = expense.get(line.split()[2], 0) + float(line.split()[1])
                             else:
                                 break
                     if line.lower().startswith("week"):
@@ -78,11 +69,8 @@ def monthly_expense(month=None):
                         break
     for w in list_of_weeks:
         week_expense = weekly_expense(w)
-        for key in week_expense.keys():
-            if key not in expense.keys():
-                expense[key] = week_expense[key]
-            else:
-                expense[key] = expense[key] + week_expense[key]
+        for key in week_expense:
+            expense[key] =  expense.get(key, 0) + week_expense[key]
     print """
 Monthly Summary
 -----------------"""
